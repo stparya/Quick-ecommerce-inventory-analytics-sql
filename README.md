@@ -1,180 +1,124 @@
-# Quick-ecommerce-inventory-analytics-sql
-PostgreSQL SQL scripts to explore, clean, and analyze the Zepto Inventory dataset—covering data quality checks, business queries (revenue, discounts, stock health), and ready-to-run setup with sample outputs.
-# Zepto Inventory Analytics (PostgreSQL)
+🛒 Zepto E-commerce SQL Data Analyst Portfolio Project
+This is a complete, real-world data analyst portfolio project based on an e-commerce inventory dataset scraped from Zepto — one of India’s fastest-growing quick-commerce startups. This project simulates real analyst workflows, from raw data exploration to business-focused data analysis.
 
-SQL-first exploration, cleaning, and business analysis for the **[Zepto Inventory Dataset](https://www.kaggle.com/datasets/palvinder2006/zepto-inventory-dataset/data)**.  
-This repo provides a ready-to-run PostgreSQL script that:
+SQL Data Analyst Portfolio Project using Zepto Inventory Dataset 
 
-- Creates a clean `zepto` table with appropriate types
-- Performs data exploration (row counts, null checks, duplicates)
-- Cleans records (zero prices, paise→rupees conversion)
-- Answers key business questions (top discounts, revenue by category, stock health, best value per gram, etc.)
+📁 Dataset Overview
+The dataset was sourced from Kaggle and was originally scraped from Zepto’s official product listings. It mimics what you’d typically encounter in a real-world e-commerce inventory system.
 
----
+Each row represents a unique SKU (Stock Keeping Unit) for a product. Duplicate product names exist because the same product may appear multiple times in different package sizes, weights, discounts, or categories to improve visibility – exactly how real catalog data looks.
 
-## Contents
+🧾 Columns:
 
-├─ /sql
-│ └─ zepto_inventory_analysis.sql # Full script: DDL + Exploration + Cleaning + Business queries
-├─ /docs
-└─ README.md
+sku_id: Unique identifier for each product entry (Synthetic Primary Key)
 
----
+name: Product name as it appears on the app
 
-## Prerequisites
+category: Product category like Fruits, Snacks, Beverages, etc.
 
-- **PostgreSQL 13+**
-- Access to the Kaggle dataset CSV(s)
+mrp: Maximum Retail Price (originally in paise, converted to ₹)
 
-> If the dataset stores monetary amounts in paise, the script already converts to rupees.
+discountPercent: Discount applied on MRP
 
----
+discountedSellingPrice: Final price after discount (also converted to ₹)
 
-## Quick Start
+availableQuantity: Units available in inventory
 
-1. **Create a database (optional)**
-   ```sql
-2.Connect to the database
-psql -d zepto_db
-3.Run the master SQL script
-Run the master SQL script
-4.Load data from CSV
--- Example COPY command (edit file path & header accordingly)
-COPY zepto(category, name, mrp, discountPercent, availableQuantity, dicountedsellingPrice, weightInGms, outofstock, quantity)
-FROM '/absolute/path/to/your/zepto.csv'
-DELIMITER ','
-CSV HEADER;
+weightInGms: Product weight in grams
 
-Schema
-DROP TABLE IF EXISTS zepto;
-CREATE TABLE zepto(
+outOfStock: Boolean flag indicating stock availability
+
+quantity: Number of units per package (mixed with grams for loose produce)
+
+🔧 Project Workflow
+Here’s a step-by-step breakdown of what we do in this project:
+
+1. Database & Table Creation
+We start by creating a SQL table with appropriate data types:
+
+CREATE TABLE zepto (
   sku_id SERIAL PRIMARY KEY,
   category VARCHAR(120),
   name VARCHAR(150) NOT NULL,
   mrp NUMERIC(8,2),
   discountPercent NUMERIC(5,2),
   availableQuantity INTEGER,
-  dicountedsellingPrice NUMERIC(8,2),
+  discountedSellingPrice NUMERIC(8,2),
   weightInGms INTEGER,
-  outofstock BOOLEAN,
+  outOfStock BOOLEAN,
   quantity INTEGER
 );
+2. Data Import
+Loaded CSV using pgAdmin's import feature.
 
-Data Exploration
--- Count rows
-SELECT COUNT(*) FROM zepto;
+If you're not able to use the import feature, write this code instead:
 
--- Sample
-SELECT * FROM zepto LIMIT 10;
+   \copy zepto(category,name,mrp,discountPercent,availableQuantity,
+            discountedSellingPrice,weightInGms,outOfStock,quantity)
+  FROM 'data/zepto_v2.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', ENCODING 'UTF8');
+Faced encoding issues (UTF-8 error), which were fixed by saving the CSV file using CSV UTF-8 format.
+3. 🔍 Data Exploration
+Counted the total number of records in the dataset
 
--- Null checks
-SELECT *
-FROM zepto
-WHERE name IS NULL
-   OR mrp IS NULL
-   OR discountPercent IS NULL
-   OR availableQuantity IS NULL
-   OR dicountedsellingPrice IS NULL
-   OR weightInGms IS NULL
-   OR outOfStock IS NULL
-   OR quantity IS NULL;
+Viewed a sample of the dataset to understand structure and content
 
--- Distinct categories
-SELECT DISTINCT category
-FROM zepto
-ORDER BY category;
+Checked for null values across all columns
 
--- In-stock vs out-of-stock
-SELECT outofstock, COUNT(sku_id)
-FROM zepto
-GROUP BY outofstock;
+Identified distinct product categories available in the dataset
 
--- Product names appearing multiple times
-SELECT name, COUNT(sku_id) AS "Number of SKUs"
-FROM zepto
-GROUP BY name
-HAVING COUNT(sku_id) > 1
-ORDER BY COUNT(sku_id) DESC;
+Compared in-stock vs out-of-stock product counts
 
-Data Cleaning
--- Products with MRP = 0
-SELECT * FROM zepto WHERE mrp = 0;
+Detected products present multiple times, representing different SKUs
 
--- Remove zero priced rows (business decision)
-DELETE FROM zepto WHERE mrp = 0;
+4. 🧹 Data Cleaning
+Identified and removed rows where MRP or discounted selling price was zero
 
--- Convert paise to rupees (if dataset is in paise)
-UPDATE zepto
-SET mrp = mrp / 100.0,
-    dicountedsellingPrice = dicountedsellingPrice / 100.0;
+Converted mrp and discountedSellingPrice from paise to rupees for consistency and readability
 
-Business Queries
-Q1. Top 10 best-value products by discount %
-SELECT DISTINCT name, mrp, discountPercent
-FROM zepto
-ORDER BY discountPercent DESC
-LIMIT 10;
+5. 📊 Business Insights
+Found top 10 best-value products based on discount percentage
 
-Q2. High MRP but Out of Stock
-SELECT DISTINCT name, mrp
-FROM zepto
-WHERE outofstock = TRUE AND mrp > 300
-ORDER BY mrp DESC;
+Identified high-MRP products that are currently out of stock
 
-Q3. Estimated Revenue per Category
-SELECT category,
-       SUM(dicountedsellingPrice * availableQuantity) AS total_revenue
-FROM zepto
-GROUP BY category
-ORDER BY total_revenue DESC;
+Estimated potential revenue for each product category
 
-Q4. MRP > 500 and Discount < 10%
-SELECT DISTINCT name, mrp, discountPercent
-FROM zepto
-WHERE mrp > 500 AND discountPercent < 10
-ORDER BY mrp DESC, discountPercent DESC;
+Filtered expensive products (MRP > ₹500) with minimal discount
 
-Q5. Top 5 Categories with Highest Avg Discount
-SELECT category,
-       ROUND(AVG(discountPercent), 2) AS avg_discount
-FROM zepto
-GROUP BY category
-ORDER BY avg_discount DESC
-LIMIT 5;
+Ranked top 5 categories offering highest average discounts
 
-Q6. Price per gram (for products ≥ 100g), best value first
-SELECT DISTINCT name, weightInGms, dicountedsellingPrice,
-       ROUND(dicountedsellingPrice::numeric / NULLIF(weightInGms, 0), 2) AS price_per_gram
-FROM zepto
-WHERE weightInGms >= 100
-ORDER BY price_per_gram;
+Calculated price per gram to identify value-for-money products
 
-Q7. Weight Buckets (Low / Medium / Bulk)
-SELECT DISTINCT name, weightInGms,
-       CASE
-         WHEN weightInGms < 1000  THEN 'Low'
-         WHEN weightInGms < 5000  THEN 'Medium'
-         ELSE 'Bulk'
-       END AS weight_category
-FROM zepto;
+Grouped products based on weight into Low, Medium, and Bulk categories
 
-Q8. Total Inventory Weight per Category
-SELECT category,
-       SUM(weightInGms * availableQuantity) AS total_weight
-FROM zepto
-GROUP BY category
-ORDER BY total_weight DESC;
+Measured total inventory weight per product category
 
-Tips & Notes
+🛠️ How to Use This Project
+Clone the repository
 
-Units: Ensure you know if prices are in paise or rupees before running the conversion step.
+git clone https://github.com/amlanmohanty/zepto-SQL-data-analysis-project.git
+cd zepto-SQL-data-analysis-project
+Open zepto_SQL_data_analysis.sql
 
-Duplicates: Consider using a deduplication strategy for name if the data has multiple SKUs per product (e.g., keep latest or highest stock).
+This file contains:
 
-Indexing: For larger datasets, add indexes to speed up analysis:
+Table creation
 
-CREATE INDEX ON zepto (category);
-CREATE INDEX ON zepto (outofstock);
-CREATE INDEX ON zepto (discountPercent);
-CREATE INDEX ON zepto (mrp);
-   CREATE DATABASE zepto_db;
+Data exploration
+
+Data cleaning
+
+SQL Business analysis
+
+Load the dataset into pgAdmin or any other PostgreSQL client
+
+Create a database and run the SQL file
+
+Import the dataset (convert to UTF-8 if necessary)
+
+Follow along with the YouTube video for full walkthrough. 👨‍💼
+
+
+
+
+
+
