@@ -92,30 +92,7 @@ Grouped products based on weight into Low, Medium, and Bulk categories
 
 Measured total inventory weight per product category
 
-🛠️ How to Use This Project
-Clone the repository
 
-git clone https://github.com/amlanmohanty/zepto-SQL-data-analysis-project.git
-cd zepto-SQL-data-analysis-project
-Open zepto_SQL_data_analysis.sql
-
-This file contains:
-
-Table creation
-
-Data exploration
-
-Data cleaning
-
-SQL Business analysis
-
-Load the dataset into pgAdmin or any other PostgreSQL client
-
-Create a database and run the SQL file
-
-Import the dataset (convert to UTF-8 if necessary)
-
-Follow along with the YouTube video for full walkthrough. 👨‍💼
 
 
 
