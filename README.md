@@ -59,6 +59,7 @@ CREATE TABLE zepto(
   outofstock BOOLEAN,
   quantity INTEGER
 );
+
 Data Exploration
 -- Count rows
 SELECT COUNT(*) FROM zepto;
